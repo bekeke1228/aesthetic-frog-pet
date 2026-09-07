@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' file:; style-src 'self'; img-src 'self' file: data:; media-src 'self' file:;"
+    />
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <div class="panel">
+      <header>
+        <img class="avatar" src="../../../assets/icons/idle.png" alt="吉蛙" />
+        <div class="head-text">
+          <div class="title">审美吉蛙</div>
+          <div class="motto">我负责好看，你负责干活。</div>
+        </div>
+        <button id="closeBtn" class="icon-btn" title="关闭">×</button>
+      </header>
+
+      <section class="card">
+        <h2><img class="sec-icon" src="../../../assets/icons/celebrate.png" alt="" />番茄钟</h2>
+        <div class="pomo-wrap">
+          <svg id="pomoRing" width="132" height="132" viewBox="0 0 132 132">
+            <circle class="ring-bg" cx="66" cy="66" r="58"></circle>
+            <circle class="ring-fg" id="pomoRingFg" cx="66" cy="66" r="58"></circle>
+          </svg>
+          <div class="pomo-center">
+            <div class="pomo-time" id="pomoTime">25:00</div>
+            <div class="pomo-mode" id="pomoMode">未开始</div>
+          </div>
+        </div>
+        <div class="row">
+          <button id="pomoToggle" class="btn primary">开始</button>
+          <button id="pomoSkip" class="btn">跳过</button>
+          <span class="count">今日 <b id="pomoCount">0</b> 个🍅</span>
+        </div>
+        <div class="pomo-extra">
+          <label class="lbl">休息 <input id="breakMin" type="number" min="1" max="60" /> 分钟</label>
+        </div>
+        <div class="sub">番茄预设 · 点 ▶ 按该时长开始</div>
+        <div id="presetList"></div>
+        <div class="row" id="preAddRow">
+          <input id="preName" type="text" placeholder="名称，如：写方案" maxlength="8" />
+          <input id="preMinutes" type="number" min="1" max="180" value="25" />
+          <button id="preAdd" class="btn primary">添加预设</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><img class="sec-icon" src="../../../assets/icons/click.png" alt="" />待办清单</h2>
+        <div class="row">
+          <input id="todoInput" type="text" placeholder="写点要干的事…" maxlength="60" />
+          <button id="todoAdd" class="btn primary">添加</button>
+        </div>
+        <ul id="todoList"></ul>
+        <button id="todoClear" class="btn link">清空已完成</button>
+      </section>
+
+      <section class="card">
+        <h2><img class="sec-icon" src="../../../assets/icons/talk.png" alt="" />问吉蛙</h2>
+        <ul id="askList"></ul>
+        <div class="row">
+          <input id="askInput" type="text" placeholder="随便问点啥…" maxlength="100" />
+          <button id="askBtn" class="btn primary">提问</button>
+        </div>
+        <button id="askClear" class="btn link">清空记录</button>
+        <p class="hint">本地趣味回答，吉蛙会用气泡回你。</p>
+      </section>
+
+      <section class="card">
+        <h2><img class="sec-icon" src="../../../assets/icons/sleep.png" alt="" />提醒</h2>
+        <div id="reminderList"></div>
+        <div class="row" id="remAddRow">
+          <input id="remLabel" type="text" placeholder="提醒内容，如：涂护手霜" maxlength="12" />
+          <input id="remMinutes" type="number" min="1" max="240" value="30" />
+          <button id="remAdd" class="btn primary">添加</button>
+        </div>
+        <label class="switch"><input id="remindPause" type="checkbox" /><span>暂停所有提醒</span></label>
+      </section>
+
+      <section class="card">
+        <h2><img class="sec-icon" src="../../../assets/icons/idle.png" alt="" />设置</h2>
+        <label class="switch"><input id="soundOn" type="checkbox" /><span>提示音</span></label>
+        <label class="switch"><input id="autostart" type="checkbox" /><span>开机自启</span></label>
+        <label class="switch"><input id="aiOn" type="checkbox" /><span>AI 问答（让吉蛙认真回答）</span></label>
+        <input id="aiKey" type="password" placeholder="OpenAI API Key（可选）" />
+        <p class="hint">填 Key 后吉蛙用 AI 回答问题；不填就用本地吐槽版。问「XX天气」会实时联网查。</p>
+        <p class="about">审美吉蛙桌宠 v3.2 · 左键拖拽移动 · 单击戳一戳 · 双击/右键打开面板</p>
+      </section>
+
+      <section class="card">
+        <h2><img class="sec-icon" src="../../../assets/icons/drag.png" alt="" />蛙设</h2>
+        <div class="profile">
+          <div class="p-row"><span class="p-k">姓名</span><span class="p-v">吉蛙（小吉）</span></div>
+          <div class="p-row"><span class="p-k">称呼</span><span class="p-v">老大 / 人类</span></div>
+          <div class="p-row"><span class="p-k">出处</span><span class="p-v">蛙星来的外星蛙，伪装成展品赖在桌面</span></div>
+          <div class="p-row"><span class="p-k">性格</span><span class="p-v">躺平不消极，吐槽不伤人</span></div>
+          <div class="p-row"><span class="p-k">口头禅</span><span class="p-v">“我负责好看，你负责干活。”</span></div>
+          <div class="p-row"><span class="p-k">喜欢</span><span class="p-v">晒太阳充能、发呆、被你戳（不承认）</span></div>
+          <div class="p-row"><span class="p-k">讨厌</span><span class="p-v">加班、内卷、KPI、下雨（会掉色）</span></div>
+          <div class="p-row"><span class="p-k">隐藏设定</span><span class="p-v">飞碟停在你显示器后面，会悄悄记你的番茄数</span></div>
+          <div class="p-row"><span class="p-k">亲密度</span><span class="p-v" id="intimacyVal">陌生（刚刚认识）</span></div>
+        </div>
+      </section>
+    </div>
+    <script src="../shared/frogbrain.js"></script>
+    <script src="panel.js"></script>
+  </body>
+</html>

@@ -1,0 +1,56 @@
+{
+  "frameSize": 320,
+  "states": {
+    "idle": {
+      "frames": [
+        "assets/sprites/idle/frame-1.png",
+        "assets/sprites/idle/frame-2.png",
+        "assets/sprites/idle/frame-3.png"
+      ],
+      "fps": 2,
+      "static": true
+    },
+    "sleep": {
+      "frames": [
+        "assets/sprites/sleep/frame-1.png",
+        "assets/sprites/sleep/frame-2.png"
+      ],
+      "fps": 1,
+      "static": true
+    },
+    "click": {
+      "frames": [
+        "assets/sprites/click/frame-1.png",
+        "assets/sprites/click/frame-2.png",
+        "assets/sprites/click/frame-3.png"
+      ],
+      "fps": 6,
+      "static": true
+    },
+    "drag": {
+      "frames": [
+        "assets/sprites/drag/frame-1.png",
+        "assets/sprites/drag/frame-2.png"
+      ],
+      "fps": 6,
+      "static": true
+    },
+    "celebrate": {
+      "frames": [
+        "assets/sprites/celebrate/frame-1.png",
+        "assets/sprites/celebrate/frame-2.png"
+      ],
+      "fps": 6,
+      "static": true
+    },
+    "talk": {
+      "frames": [
+        "assets/sprites/talk/frame-1.png",
+        "assets/sprites/talk/frame-2.png",
+        "assets/sprites/talk/frame-3.png"
+      ],
+      "fps": 4,
+      "static": true
+    }
+  }
+}

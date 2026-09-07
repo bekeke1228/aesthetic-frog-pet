@@ -1,0 +1,41 @@
+{
+  "name": "aesthetic-frog-pet",
+  "version": "3.2.0",
+  "description": "审美吉蛙桌宠：效率陪伴型桌面宠物（番茄钟 / 待办 / 喝水久坐提醒）",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.aesthetic.frog.pet",
+    "productName": "审美吉蛙桌宠",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "assets/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "审美吉蛙桌宠"
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.12"
+  }
+}

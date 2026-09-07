@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' file:; style-src 'self'; img-src 'self' file: data:; media-src 'self' file:;"
+    />
+    <link rel="stylesheet" href="pet.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <div id="chatBar">
+        <input id="chatInput" type="text" placeholder="和吉蛙说点什么…" maxlength="100" />
+      </div>
+      <button id="chatBtn" title="和吉蛙对话">💬</button>
+      <div id="timerChip"></div>
+      <div id="bubble"><span id="bubbleText"></span></div>
+      <img id="frog" alt="吉蛙" draggable="false" />
+    </div>
+    <script src="../shared/frogbrain.js"></script>
+    <script src="quotes.js"></script>
+    <script src="pet.js"></script>
+  </body>
+</html>

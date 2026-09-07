@@ -1,0 +1,175 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#stage {
+  position: relative;
+  width: 380px;
+  height: 220px;
+}
+
+#frog {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 172px;
+  height: 172px;
+  object-fit: contain;
+  cursor: grab;
+  -webkit-user-drag: none;
+}
+
+#frog:active {
+  cursor: grabbing;
+}
+
+#chatBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #4a4433;
+  background: #ffffff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+#chatBtn:hover {
+  background: #f2ffe6;
+}
+
+#chatBar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 46px;
+  z-index: 9;
+  display: none;
+}
+
+#chatBar.show {
+  display: block;
+}
+
+#chatInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid #4a4433;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font: 13px/1.4 "Microsoft YaHei", sans-serif;
+  background: #ffffff;
+  color: #3a3a2e;
+  outline: none;
+}
+
+#chatInput:focus {
+  box-shadow: 0 0 0 3px rgba(123, 255, 60, 0.35);
+}
+
+#timerChip {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  background: rgba(20, 20, 20, 0.62);
+  color: #fff;
+  font: 11px/1.6 "Microsoft YaHei", sans-serif;
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+#timerChip.show {
+  display: block;
+}
+
+#bubble {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  max-width: 366px;
+  min-width: 64px;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #3a3a2e;
+  font: 13px/1.5 "Microsoft YaHei", sans-serif;
+  border: 2px solid #4a4433;
+  border-radius: 999px;
+  padding: 10px 16px;
+  text-align: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease-out;
+  z-index: 5;
+}
+
+#bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  margin-left: -8px;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-right: 2px solid #4a4433;
+  border-bottom: 2px solid #4a4433;
+  border-bottom-right-radius: 4px;
+  transform: rotate(45deg);
+}
+
+#bubble.show {
+  opacity: 1;
+  animation: bubbleIn 0.22s ease-out;
+}
+
+body.chatting #bubble {
+  top: 60px;
+}
+
+@keyframes bubbleIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px) scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-2px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+#bubbleText.typing::after {
+  content: "▍";
+  color: #7a6f52;
+  margin-left: 1px;
+  animation: blink 0.8s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
