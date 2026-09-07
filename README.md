@@ -23,7 +23,6 @@ pnpm install
 pnpm start
 ```
 
-首次安装需要联网下载 Electron。启动后吉蛙出现在桌面右下角。
 
 ## 操作
 
