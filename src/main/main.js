@@ -334,7 +334,7 @@ function popupContextMenu() {
 
 function createTray() {
   tray = new Tray(path.join(ASSETS, "tray.png"));
-  tray.setToolTip("审美吉蛙桌宠 v3.2");
+  tray.setToolTip("审美吉蛙桌宠 v3.3");
   refreshTrayMenu();
 }
 
@@ -430,6 +430,25 @@ function registerIpc() {
   ipcMain.handle("window:setClickThrough", (_e, ignore) =>
     setClickThrough(!!ignore)
   );
+  ipcMain.handle("window:setShape", (_e, rects) => {
+    if (!petWin || petWin.isDestroyed()) return;
+    try {
+      if (Array.isArray(rects) && rects.length) {
+        petWin.setShape(
+          rects.map((r) => ({
+            x: Math.round(r.x),
+            y: Math.round(r.y),
+            width: Math.max(1, Math.round(r.width)),
+            height: Math.max(1, Math.round(r.height)),
+          }))
+        );
+      } else {
+        petWin.setShape([]);
+      }
+    } catch (_) {
+      /* 部分平台不支持时忽略 */
+    }
+  });
   ipcMain.handle("ai:ask", (_e, q, call) =>
     aiAsk(String(q || ""), String(call || "人类"))
   );

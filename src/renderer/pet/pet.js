@@ -39,6 +39,18 @@ function setState(name, opts = {}) {
   const info = stateInfo(name);
   frog.src = info.frames[Math.floor(Math.random() * info.frames.length)];
   if (opts.resetIdle !== false && name !== "sleep") idleSince = Date.now();
+  setTimeout(applyShape, 80);
+}
+
+// 显示某个形态的指定一帧（拖拽表情：drag_01 / drag_02）
+function showFrame(name, index) {
+  stateName = name;
+  const info = stateInfo(name);
+  frog.src =
+    info.frames[Math.max(0, Math.min(index, info.frames.length - 1))] ||
+    manifest.fallbackUrl;
+  idleSince = Date.now();
+  setTimeout(applyShape, 80);
 }
 
 // 互动后的新姿势：只从「待机」分类里随机挑一帧，不与其他分类混用
@@ -96,58 +108,82 @@ function playSound(name) {
 const clickCanvas = document.createElement("canvas");
 const clickCtx = clickCanvas.getContext("2d", { willReadFrequently: true });
 let clickDrawnSrc = "";
-let clickIgnore = null;
+let shapeTimer = null;
 
-function pointInteractive(e) {
-  // 聊天/拖拽/按钮区域始终可点
-  if (document.body.classList.contains("chatting")) return true;
-  const btn = chatBtn.getBoundingClientRect();
-  if (
-    e.clientX >= btn.left &&
-    e.clientX <= btn.right &&
-    e.clientY >= btn.top &&
-    e.clientY <= btn.bottom
-  )
-    return true;
-  if (drag) return true;
+function ensureSpriteCanvas() {
   const rect = frog.getBoundingClientRect();
+  const w = Math.round(rect.width);
+  const h = Math.round(rect.height);
+  if (!frog.complete || !frog.naturalWidth || w <= 0 || h <= 0) return null;
   if (
-    e.clientX < rect.left ||
-    e.clientX > rect.right ||
-    e.clientY < rect.top ||
-    e.clientY > rect.bottom
-  )
-    return false;
-  // 像素级判断：只看吉蛙不透明部分
-  try {
-    if (!frog.complete || !frog.naturalWidth) return true;
-    const w = Math.round(rect.width);
-    const h = Math.round(rect.height);
-    if (clickCanvas.width !== w || clickCanvas.height !== h || clickDrawnSrc !== frog.src) {
-      clickCanvas.width = w;
-      clickCanvas.height = h;
-      clickCtx.clearRect(0, 0, w, h);
-      clickCtx.drawImage(frog, 0, 0, w, h);
-      clickDrawnSrc = frog.src;
-    }
-    const px = clickCtx.getImageData(
-      Math.max(0, Math.min(w - 1, Math.floor(e.clientX - rect.left))),
-      Math.max(0, Math.min(h - 1, Math.floor(e.clientY - rect.top))),
-      1,
-      1
-    ).data;
-    return px[3] > 12;
-  } catch (_) {
-    return true;
+    clickCanvas.width !== w ||
+    clickCanvas.height !== h ||
+    clickDrawnSrc !== frog.src
+  ) {
+    clickCanvas.width = w;
+    clickCanvas.height = h;
+    clickCtx.clearRect(0, 0, w, h);
+    clickCtx.drawImage(frog, 0, 0, w, h);
+    clickDrawnSrc = frog.src;
   }
+  return { rect, w, h };
 }
 
-function syncClickThrough(e) {
-  const ignore = !pointInteractive(e);
-  if (ignore !== clickIgnore) {
-    clickIgnore = ignore;
-    api.window.setClickThrough(ignore);
+function spriteBBox() {
+  const info = ensureSpriteCanvas();
+  if (!info) return null;
+  const { rect, w, h } = info;
+  let data;
+  try {
+    data = clickCtx.getImageData(0, 0, w, h).data;
+  } catch (_) {
+    return null;
   }
+  let x0 = w;
+  let y0 = h;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] > 12) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+  }
+  if (x1 < x0 || y1 < y0) return null;
+  return {
+    x: Math.round(rect.left + x0),
+    y: Math.round(rect.top + y0),
+    width: Math.round(x1 - x0 + 1),
+    height: Math.round(y1 - y0 + 1),
+  };
+}
+
+// 用原生窗口形状实现精确点击区域：只有吉蛙轮廓与对话按钮可点，
+// 其余透明区域完全不接收鼠标，跨电脑表现一致
+function applyShape() {
+  clearTimeout(shapeTimer);
+  shapeTimer = setTimeout(() => {
+    if (!api || !api.window) return;
+    if (document.body.classList.contains("chatting") || drag) {
+      api.window.setShape([]);
+      return;
+    }
+    const parts = [];
+    const body = spriteBBox();
+    if (body) parts.push(body);
+    const btn = chatBtn.getBoundingClientRect();
+    parts.push({
+      x: Math.round(btn.left),
+      y: Math.round(btn.top),
+      width: Math.max(1, Math.round(btn.width)),
+      height: Math.max(1, Math.round(btn.height)),
+    });
+    api.window.setShape(parts);
+  }, 30);
 }
 
 function wake() {
@@ -178,11 +214,11 @@ function toggleChat(forceOpen) {
   chatBar.classList.toggle("show", willOpen);
   document.body.classList.toggle("chatting", willOpen);
   api.window.setChatMode(willOpen);
+  setTimeout(applyShape, 140);
   if (willOpen) {
     chatInput.focus();
   } else {
     chatInput.blur();
-    clickIgnore = null;
   }
 }
 
@@ -289,7 +325,8 @@ frog.addEventListener("mousedown", async (e) => {
     py: pos[1],
     t: Date.now(),
   };
-  setState("drag");
+  showFrame("drag", 0);
+  api.window.setShape([]);
 });
 
 window.addEventListener("mousemove", (e) => {
@@ -298,9 +335,7 @@ window.addEventListener("mousemove", (e) => {
     const dy = e.screenY - drag.sy;
     if (!drag.moved && Math.hypot(dx, dy) > 4) drag.moved = true;
     if (drag.moved) api.window.moveTo(drag.px + dx, drag.py + dy);
-    return;
   }
-  syncClickThrough(e);
 });
 
 window.addEventListener("mouseup", (e) => {
@@ -309,7 +344,13 @@ window.addEventListener("mouseup", (e) => {
   drag = null;
   const isClick = !d.moved && e.button === 0 && Date.now() - d.t < 500;
   if (isClick) onClick();
-  else nextIdlePose();
+  else {
+    // 拖拽结束：短暂显示 drag_02（不乐），再回到随机待机
+    clearTimeout(stateTimer);
+    showFrame("drag", 1);
+    stateTimer = setTimeout(nextIdlePose, 1100);
+  }
+  applyShape();
 });
 
 frog.addEventListener("dblclick", (e) => {
@@ -355,11 +396,10 @@ async function init() {
   const store = await api.getStore();
   settings = store.settings;
   intimacy = store.intimacy || { seconds: 0 };
-  // 默认透明区域点击穿透，悬停到吉蛙/按钮时自动恢复可点
-  clickIgnore = true;
-  api.window.setClickThrough(true);
+  frog.addEventListener("load", applyShape);
   nextIdlePose();
-  say("{call}，我是审美吉蛙 v3.2。戳我换姿势，问问题也可以。", 0, "🐸");
+  setTimeout(applyShape, 160);
+  say("{call}，我是审美吉蛙 v3.3。戳我换姿势，问问题也可以。", 0, "🐸");
   api.on("store:update", (s) => {
     settings = s.settings;
     intimacy = s.intimacy || intimacy;

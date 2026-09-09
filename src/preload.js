@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld("api", {
     getPosition: () => ipcRenderer.invoke("window:getPosition"),
     setChatMode: (on) => ipcRenderer.invoke("window:setChatMode", !!on),
     setClickThrough: (on) => ipcRenderer.invoke("window:setClickThrough", !!on),
+    setShape: (rects) => ipcRenderer.invoke("window:setShape", rects),
   },
   ai: {
     ask: (q, call) => ipcRenderer.invoke("ai:ask", q, call),

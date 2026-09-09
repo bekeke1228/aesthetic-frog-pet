@@ -1,6 +1,6 @@
 {
   "name": "aesthetic-frog-pet",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "审美吉蛙桌宠：效率陪伴型桌面宠物（番茄钟 / 待办 / 喝水久坐提醒）",
   "main": "src/main/main.js",
   "scripts": {

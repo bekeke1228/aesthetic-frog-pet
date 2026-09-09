@@ -2,6 +2,7 @@ node_modules/
 *.log
 release/
 .tools/
+出现问题/
 assets/raw/
 assets/contact_sheet.png
 参考素材/
