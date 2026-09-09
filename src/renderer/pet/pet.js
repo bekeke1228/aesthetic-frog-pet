@@ -44,6 +44,7 @@ function setState(name, opts = {}) {
 
 // 显示某个形态的指定一帧（拖拽表情：drag_01 / drag_02）
 function showFrame(name, index) {
+  clearTimeout(stateTimer);
   stateName = name;
   const info = stateInfo(name);
   frog.src =
@@ -70,6 +71,7 @@ function say(text, ms = 0, emoji = "") {
   bubble.classList.remove("show");
   void bubble.offsetWidth;
   bubble.classList.add("show");
+  applyShape();
   let i = 0;
   typeTimer = setInterval(() => {
     i += 1;
@@ -79,11 +81,12 @@ function say(text, ms = 0, emoji = "") {
       bubbleText.classList.remove("typing");
     }
   }, 100);
-  const duration = Math.max(ms, Math.min(2800 + full.length * 110, 10000));
+  const duration = Math.max(ms, Math.min(2400 + full.length * 90, 8500));
   bubbleTimer = setTimeout(() => {
     clearInterval(typeTimer);
     bubbleText.classList.remove("typing");
     bubble.classList.remove("show");
+    applyShape();
   }, duration);
 }
 
@@ -182,6 +185,25 @@ function applyShape() {
       width: Math.max(1, Math.round(btn.width)),
       height: Math.max(1, Math.round(btn.height)),
     });
+    // 气泡/计时标签在吉蛙上方，窗口形状会同时限制显示区域，
+    // 出现时必须临时把形状扩到它们所在的顶部区域，否则会被系统裁掉
+    if (bubble.classList.contains("show")) {
+      parts.push({
+        x: 0,
+        y: 0,
+        width: Math.round(window.innerWidth),
+        height: 130,
+      });
+    }
+    if (timerChip.classList.contains("show")) {
+      const chip = timerChip.getBoundingClientRect();
+      parts.push({
+        x: Math.max(0, Math.round(chip.left - 6)),
+        y: Math.max(0, Math.round(chip.top - 3)),
+        width: Math.max(1, Math.round(chip.width + 12)),
+        height: Math.max(1, Math.round(chip.height + 6)),
+      });
+    }
     api.window.setShape(parts);
   }, 30);
 }
@@ -312,29 +334,39 @@ function scheduleRandomTalk() {
   }, delay);
 }
 
-frog.addEventListener("mousedown", async (e) => {
+frog.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
   e.preventDefault();
   wake();
-  const pos = await api.window.getPosition();
   drag = {
     moved: false,
     sx: e.screenX,
     sy: e.screenY,
-    px: pos[0],
-    py: pos[1],
+    px: null,
+    py: null,
     t: Date.now(),
   };
-  showFrame("drag", 0);
   api.window.setShape([]);
+  api.window.getPosition().then((pos) => {
+    if (drag) {
+      drag.px = pos[0];
+      drag.py = pos[1];
+    }
+  });
 });
 
 window.addEventListener("mousemove", (e) => {
   if (drag) {
     const dx = e.screenX - drag.sx;
     const dy = e.screenY - drag.sy;
-    if (!drag.moved && Math.hypot(dx, dy) > 4) drag.moved = true;
-    if (drag.moved) api.window.moveTo(drag.px + dx, drag.py + dy);
+    if (!drag.moved && Math.hypot(dx, dy) > 8) {
+      drag.moved = true;
+      // 真正开始拖动时才切拖拽表情 drag_01
+      showFrame("drag", 0);
+    }
+    if (drag.moved && drag.px != null && drag.py != null) {
+      api.window.moveTo(drag.px + dx, drag.py + dy);
+    }
   }
 });
 
@@ -342,13 +374,14 @@ window.addEventListener("mouseup", (e) => {
   if (!drag) return;
   const d = drag;
   drag = null;
-  const isClick = !d.moved && e.button === 0 && Date.now() - d.t < 500;
-  if (isClick) onClick();
-  else {
+  if (d.moved) {
     // 拖拽结束：短暂显示 drag_02（不乐），再回到随机待机
     clearTimeout(stateTimer);
     showFrame("drag", 1);
     stateTimer = setTimeout(nextIdlePose, 1100);
+  } else if (e.button === 0) {
+    // 没有真正拖动就松手 = 轻点/长按，都视为“戳”：说话 + 气泡
+    onClick();
   }
   applyShape();
 });

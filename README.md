@@ -4,6 +4,8 @@
 
 <p align="center"><img src="docs/cover.jpg" width="420" alt="审美吉蛙桌宠展示图"></p>
 
+> 免安装版（朋友直接用）：https://github.com/bekeke1228/aesthetic-frog-pet/releases/latest
+
 ## 下载与运行（给朋友 / 普通用户）
 - 请下载页面右侧 **Releases** 里的 `审美吉蛙桌宠-3.3.0-win.zip`（免安装便携版）。
 - 先**完整解压整个文件夹**，再双击里面的 `审美吉蛙桌宠.exe` 运行；不要在压缩包内直接双击，也不要只把单个 exe 拷走。

@@ -600,6 +600,56 @@ app.whenReady().then(() => {
             "FROGBRAIN.smartAnswer('今天天气怎么样', '人类', {}).then(x => 'local:' + x)"
           )
         );
+        console.log(
+          "CLICK_TEST",
+          await petWin.webContents.executeJavaScript(
+            `(async () => {
+              const frogEl = document.getElementById('frog');
+              const fire = (type, x, y, sx, sy, t) =>
+                t.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: y, screenX: sx, screenY: sy }));
+              fire('mousedown', 100, 180, 100, 180, frogEl);
+              await new Promise((r) => setTimeout(r, 80));
+              fire('mouseup', 100, 180, 100, 180, window);
+              fire('click', 100, 180, 100, 180, frogEl);
+              await new Promise((r) => setTimeout(r, 320));
+              const s1 = {
+                state: stateName,
+                isClick: frog.src.indexOf('/click/') >= 0,
+                isDrag: frog.src.indexOf('/drag/') >= 0,
+                bubbleShow: document.getElementById('bubble').classList.contains('show'),
+              };
+              await new Promise((r) => setTimeout(r, 2200));
+              const s2 = {
+                bubbleShow: document.getElementById('bubble').classList.contains('show'),
+                textLen: document.getElementById('bubbleText').textContent.length,
+              };
+              return JSON.stringify({ s1, s2 });
+            })()`
+          )
+        );
+        console.log(
+          "DRAG_TEST",
+          await petWin.webContents.executeJavaScript(
+            `(async () => {
+              const frogEl = document.getElementById('frog');
+              const fire = (type, x, y, sx, sy, t) =>
+                t.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: y, screenX: sx, screenY: sy }));
+              fire('mousedown', 100, 180, 100, 180, frogEl);
+              await new Promise((r) => setTimeout(r, 80));
+              fire('mousemove', 160, 180, 160, 180, window);
+              await new Promise((r) => setTimeout(r, 120));
+              fire('mouseup', 160, 180, 160, 180, window);
+              await new Promise((r) => setTimeout(r, 300));
+              const a = {
+                state: stateName,
+                f2: frog.src.indexOf('drag/frame-2') >= 0,
+              };
+              await new Promise((r) => setTimeout(r, 1200));
+              const b = { state: stateName };
+              return JSON.stringify({ a, b });
+            })()`
+          )
+        );
       } catch (err) {
         console.log("FRAME_TEST_ERROR", err.message);
       }
