@@ -4,6 +4,7 @@ const RING_C = 364.4;
 let store = null;
 let pomo = null;
 let askHistory = [];
+let lastAiMsg = null;
 
 function renderAsks() {
   const list = $("askList");
@@ -26,14 +27,28 @@ async function askFrog() {
   if (!q) return;
   input.value = "";
   const call = FROGBRAIN.callFor(store.intimacy.seconds || 0);
+  const aiEnabled = !!(store.settings.aiOn && store.settings.aiKey);
+  let source = "local";
   const a = await FROGBRAIN.smartAnswer(q, call, {
-    aiKey: store.settings.aiOn && store.settings.aiKey ? store.settings.aiKey : "",
+    aiKey: aiEnabled ? store.settings.aiKey : "",
     ask: (text, c) => api.ai.ask(text, c),
     weather: (city) => api.ai.weather(city),
+    onSource: (s) => {
+      source = s;
+    },
+    onAiError: (msg) => {
+      lastAiMsg = `上次 AI 调用失败：${msg}`;
+      renderAiStatus();
+    },
+    onWeatherError: (msg) => {
+      lastAiMsg = `上次天气查询失败：${msg}`;
+      renderAiStatus();
+    },
   });
-  askHistory.push({ q, a });
+  const text = source === "local" && aiEnabled ? `${a}（本地）` : a;
+  askHistory.push({ q, a: text });
   renderAsks();
-  api.pet.talk(a);
+  api.pet.talk(text);
 }
 
 function clampInt(v, min, max) {
@@ -207,6 +222,25 @@ function renderReminders() {
   }
 }
 
+function renderAiStatus() {
+  const el = $("aiStatus");
+  if (!el || !store) return;
+  if (lastAiMsg) {
+    el.textContent = lastAiMsg;
+    return;
+  }
+  const provider = store.settings.aiProvider || "openai";
+  const names = { openai: "OpenAI", deepseek: "DeepSeek", custom: "自定义" };
+  const models = { openai: "gpt-4o-mini", deepseek: "deepseek-chat", custom: "自定义模型" };
+  const bases = { openai: "api.openai.com", deepseek: "api.deepseek.com", custom: "自定义地址" };
+  const model = store.settings.aiModel || models[provider] || "";
+  const base = store.settings.aiBaseUrl || bases[provider] || "";
+  el.textContent =
+    `当前：${names[provider] || provider} · ${model} · ${base} · ` +
+    `Key${store.settings.aiKey ? "已填" : "未填"} · ${store.settings.aiOn ? "已开启" : "未开启"}` +
+    (store.settings.weatherCity ? ` · 默认城市 ${store.settings.weatherCity}` : "");
+}
+
 function renderTodos() {
   const list = $("todoList");
   list.innerHTML = "";
@@ -242,6 +276,19 @@ function render() {
   $("autostart").checked = store.settings.autostart;
   syncInput("aiKey", store.settings.aiKey || "");
   $("aiOn").checked = !!store.settings.aiOn;
+  const provider = store.settings.aiProvider || "openai";
+  $("aiProvider").value = provider;
+  syncInput("aiBaseUrl", store.settings.aiBaseUrl || "");
+  syncInput("aiModel", store.settings.aiModel || "");
+  syncInput("weatherCity", store.settings.weatherCity || "");
+  const defaults = {
+    openai: { base: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+    deepseek: { base: "https://api.deepseek.com/v1", model: "deepseek-chat" },
+    custom: { base: "https://your-endpoint/v1", model: "your-model" },
+  };
+  const d = defaults[provider] || defaults.custom;
+  $("aiBaseUrl").placeholder = `接口地址，如 ${d.base}`;
+  $("aiModel").placeholder = `模型，如 ${d.model}`;
   $("remindPause").checked = store.reminders.paused;
   const iv = $("intimacyVal");
   if (iv && store.intimacy) {
@@ -250,6 +297,7 @@ function render() {
   renderReminders();
   renderPresets();
   renderTodos();
+  renderAiStatus();
 }
 
 function renderPomo() {
@@ -322,6 +370,40 @@ $("aiKey").addEventListener("change", (e) => {
 $("aiOn").addEventListener("change", (e) =>
   api.setStore({ settings: { aiOn: e.target.checked } })
 );
+$("aiProvider").addEventListener("change", (e) =>
+  api.setStore({
+    settings: { aiProvider: e.target.value, aiBaseUrl: "", aiModel: "" },
+  })
+);
+$("aiBaseUrl").addEventListener("change", (e) =>
+  api.setStore({ settings: { aiBaseUrl: e.target.value.trim() } })
+);
+$("aiModel").addEventListener("change", (e) =>
+  api.setStore({ settings: { aiModel: e.target.value.trim() } })
+);
+$("weatherCity").addEventListener("change", (e) =>
+  api.setStore({ settings: { weatherCity: e.target.value.trim().slice(0, 12) } })
+);
+$("weatherTest").addEventListener("click", async () => {
+  const el = $("aiStatus");
+  if (el) el.textContent = "正在查询天气…";
+  const r = await api.ai.weather(store.settings.weatherCity || "");
+  if (el) {
+    el.textContent = r && r.ok
+      ? `天气查询成功：${r.text}`
+      : `天气查询失败：${(r && r.error) || "未知错误"}`;
+  }
+});
+$("aiTest").addEventListener("click", async () => {
+  const el = $("aiStatus");
+  if (el) el.textContent = "正在测试连接…";
+  const r = await api.ai.test();
+  if (el) {
+    el.textContent = r && r.ok
+      ? `连接成功：${String(r.text || "").slice(0, 30)}`
+      : `连接失败：${(r && r.error) || "未知错误"}`;
+  }
+});
 $("remindPause").addEventListener("change", (e) => {
   store.reminders.paused = e.target.checked;
   api.reminders.pause(e.target.checked);

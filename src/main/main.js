@@ -225,20 +225,39 @@ const WMO = {
   99: "强雷雨冰雹",
 };
 
-async function aiAsk(q, call) {
-  const key = store.get().settings.aiKey;
-  if (!key) return { ok: false };
+const AI_PROVIDERS = {
+  openai: { base: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  deepseek: { base: "https://api.deepseek.com/v1", model: "deepseek-chat" },
+};
+
+function resolveAi() {
+  const s = store.get().settings;
+  const provider = s.aiProvider || "openai";
+  const preset = AI_PROVIDERS[provider] || {};
+  return {
+    provider,
+    base: String(s.aiBaseUrl || preset.base || "").replace(/\/+$/, ""),
+    model: String(s.aiModel || preset.model || "gpt-4o-mini"),
+    key: String(s.aiKey || ""),
+    enabled: !!s.aiOn && !!s.aiKey && !!(s.aiBaseUrl || preset.base),
+  };
+}
+
+async function aiAsk(q, call, maxTokens) {
+  const cfg = resolveAi();
+  if (!cfg.enabled) return { ok: false, error: "未启用 AI 或缺少 API Key" };
+  const key = cfg.key;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20000);
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch(`${cfg.base}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${key}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: cfg.model,
         messages: [
           {
             role: "system",
@@ -250,13 +269,24 @@ async function aiAsk(q, call) {
           },
           { role: "user", content: q },
         ],
-        max_tokens: 200,
+        max_tokens: maxTokens || 200,
         temperature: 0.9,
       }),
       signal: controller.signal,
     });
     clearTimeout(timer);
-    if (!res.ok) return { ok: false };
+    if (!res.ok) {
+      let detail = "";
+      try {
+        detail = (await res.text()).slice(0, 200);
+      } catch (_) {
+        /* 忽略 */
+      }
+      return {
+        ok: false,
+        error: `HTTP ${res.status}${detail ? " " + detail : ""}`,
+      };
+    }
     const data = await res.json();
     const text = (
       (data.choices &&
@@ -265,15 +295,32 @@ async function aiAsk(q, call) {
         data.choices[0].message.content) ||
       ""
     ).trim();
-    return text ? { ok: true, text } : { ok: false };
-  } catch (_) {
+    return text ? { ok: true, text } : { ok: false, error: "返回内容为空" };
+  } catch (err) {
     clearTimeout(timer);
-    return { ok: false };
+    return { ok: false, error: String((err && err.message) || err) };
   }
 }
 
-async function aiWeather(city) {
-  if (!city) return { ok: false };
+async function aiTest() {
+  const r = await aiAsk("你好，请只回复：在呢", "人类", 16);
+  return r.ok ? { ok: true, text: r.text } : { ok: false, error: r.error };
+}
+
+async function aiWeather(cityRaw) {
+  let city = String(cityRaw || "").trim();
+  if (!city) city = String(store.get().settings.weatherCity || "").trim();
+  // 没有城市时用 IP 粗略定位兜底
+  if (!city) {
+    try {
+      const ipRes = await fetch("https://ipapi.co/json/");
+      const info = await ipRes.json();
+      city = String((info && (info.city || info.region)) || "").trim();
+    } catch (_) {
+      city = "";
+    }
+  }
+  if (!city) return { ok: false, error: "no-city" };
   try {
     const geoRes = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
@@ -334,7 +381,7 @@ function popupContextMenu() {
 
 function createTray() {
   tray = new Tray(path.join(ASSETS, "tray.png"));
-  tray.setToolTip("审美吉蛙桌宠 v3.3");
+  tray.setToolTip("审美吉蛙桌宠 v3.5");
   refreshTrayMenu();
 }
 
@@ -453,6 +500,7 @@ function registerIpc() {
     aiAsk(String(q || ""), String(call || "人类"))
   );
   ipcMain.handle("ai:weather", (_e, city) => aiWeather(String(city || "")));
+  ipcMain.handle("ai:test", () => aiTest());
   ipcMain.handle("app:quit", () => app.quit());
 }
 
@@ -599,6 +647,14 @@ app.whenReady().then(() => {
           await petWin.webContents.executeJavaScript(
             "FROGBRAIN.smartAnswer('今天天气怎么样', '人类', {}).then(x => 'local:' + x)"
           )
+        );
+        console.log(
+          "AI_TEST",
+          JSON.stringify(await panelWin.webContents.executeJavaScript("api.ai.test()"))
+        );
+        console.log(
+          "WEATHER_TEST",
+          JSON.stringify(await panelWin.webContents.executeJavaScript("api.ai.weather('')"))
         );
         console.log(
           "CLICK_TEST",

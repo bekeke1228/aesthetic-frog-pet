@@ -173,31 +173,53 @@ window.FROGBRAIN = (function () {
     );
   }
 
+  function cleanCity(q) {
+    const s = String(q).replace(
+      /(今天|明天|现在|这边|这里|那儿|当地|本地|一下|怎么样|如何|多少度|几度|的|了|吗|呢|呀|啊|\?|？|！|!)/g,
+      ""
+    );
+    const m =
+      s.match(/([\u4e00-\u9fa5A-Za-z]{2,12}?)(?:天气|气温|温度)/) ||
+      s.match(/(?:天气|气温|温度)([\u4e00-\u9fa5A-Za-z]{2,12})/);
+    return m ? String(m[1] || m[2] || "").trim() : "";
+  }
+
   // 智能回答：天气联网 -> AI(可选) -> 本地蛙脑兜底
   async function smartAnswer(q, call, deps) {
     const t = String(q || "").trim();
-    const mCity =
-      t.match(/([\u4e00-\u9fa5]{1,10}?)(?:天气|气温|温度)/) ||
-      t.match(/(?:天气|气温|温度)([\u4e00-\u9fa5]{1,10})/);
-    if (/(天气|气温|温度|下雨|晴)/.test(t)) {
-      if (mCity && deps && deps.weather) {
+    if (/(天气|气温|温度|下雨|晴|多云)/.test(t)) {
+      if (deps && deps.weather) {
         try {
-          const r = await deps.weather(mCity[1] || mCity[2] || "");
-          if (r && r.ok) return r.text;
-        } catch (_) {
-          /* 联网失败走本地 */
+          const r = await deps.weather(cleanCity(t));
+          if (r && r.ok) {
+            if (deps.onSource) deps.onSource("weather");
+            return r.text;
+          }
+          if (r && r.error === "no-city") {
+            if (deps.onSource) deps.onSource("local");
+            return "告诉我城市名吧，比如「上海天气」，我这就联网帮你查。";
+          }
+          if (deps.onWeatherError) deps.onWeatherError((r && r.error) || "未知错误");
+        } catch (err) {
+          if (deps.onWeatherError) deps.onWeatherError(String((err && err.message) || err));
         }
       }
+      if (deps && deps.onSource) deps.onSource("local");
       return answer(t, call);
     }
     if (deps && deps.aiKey && deps.ask) {
       try {
         const r = await deps.ask(q, call);
-        if (r && r.ok && r.text) return r.text;
-      } catch (_) {
-        /* AI 失败走本地 */
+        if (r && r.ok && r.text) {
+          if (deps.onSource) deps.onSource("ai");
+          return r.text;
+        }
+        if (deps.onAiError) deps.onAiError((r && r.error) || "未知错误");
+      } catch (err) {
+        if (deps.onAiError) deps.onAiError(String((err && err.message) || err));
       }
     }
+    if (deps && deps.onSource) deps.onSource("local");
     return answer(q, call);
   }
 

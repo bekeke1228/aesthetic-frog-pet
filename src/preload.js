@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld("api", {
   ai: {
     ask: (q, call) => ipcRenderer.invoke("ai:ask", q, call),
     weather: (city) => ipcRenderer.invoke("ai:weather", city),
+    test: () => ipcRenderer.invoke("ai:test"),
   },
   menu: { popup: () => ipcRenderer.invoke("menu:popup") },
   app: { quit: () => ipcRenderer.invoke("app:quit") },

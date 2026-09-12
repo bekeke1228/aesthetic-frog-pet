@@ -85,9 +85,29 @@
         <label class="switch"><input id="soundOn" type="checkbox" /><span>提示音</span></label>
         <label class="switch"><input id="autostart" type="checkbox" /><span>开机自启</span></label>
         <label class="switch"><input id="aiOn" type="checkbox" /><span>AI 问答（让吉蛙认真回答）</span></label>
-        <input id="aiKey" type="password" placeholder="OpenAI API Key（可选）" />
-        <p class="hint">填 Key 后吉蛙用 AI 回答问题；不填就用本地吐槽版。问「XX天气」会实时联网查。</p>
-        <p class="about">审美吉蛙桌宠 v3.3 · 左键拖拽移动 · 单击戳一戳 · 双击/右键打开面板</p>
+        <div class="row inputs">
+          <label>服务商
+            <select id="aiProvider">
+              <option value="openai">OpenAI</option>
+              <option value="deepseek">DeepSeek</option>
+              <option value="custom">自定义</option>
+            </select>
+          </label>
+        </div>
+        <input id="aiKey" type="password" placeholder="API Key（OpenAI / DeepSeek 等）" />
+        <div class="row">
+          <input id="aiBaseUrl" type="text" placeholder="接口地址，如 https://api.deepseek.com/v1" />
+        </div>
+        <div class="row">
+          <input id="aiModel" type="text" placeholder="模型，如 deepseek-chat" />
+          <button id="aiTest" class="btn">测试连接</button>
+        </div>
+        <div class="row">
+          <input id="weatherCity" type="text" placeholder="默认城市（不写城市时用，如 上海）" maxlength="12" />
+          <button id="weatherTest" class="btn">测试天气</button>
+        </div>
+        <p class="hint" id="aiStatus">未启用 AI。DeepSeek 选「DeepSeek」并填 Key 即可；问「XX天气」会实时联网查。</p>
+        <p class="about">审美吉蛙桌宠 v3.5 · 左键拖拽移动 · 单击戳一戳 · 双击/右键打开面板</p>
       </section>
 
       <section class="card">

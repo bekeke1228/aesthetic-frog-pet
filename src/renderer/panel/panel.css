@@ -262,6 +262,16 @@ input[type="text"] {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
+select {
+  border: 1.5px solid rgba(123, 255, 60, 0.28);
+  border-radius: 9px;
+  padding: 5px 8px;
+  font-size: 13px;
+  background: #0d2148;
+  color: #eaf2ff;
+  outline: none;
+}
+
 input[type="text"] {
   flex: 1;
   width: auto;

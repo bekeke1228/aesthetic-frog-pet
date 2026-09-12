@@ -20,6 +20,10 @@ function defaults() {
       autostart: false,
       aiKey: "",
       aiOn: false,
+      aiProvider: "openai",
+      aiBaseUrl: "",
+      aiModel: "",
+      weatherCity: "",
     },
     todos: [],
     pomodoro: {

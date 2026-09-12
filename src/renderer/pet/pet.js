@@ -249,12 +249,20 @@ async function sendChat() {
   if (!q) return;
   chatInput.value = "";
   const call = callTerm();
+  const aiEnabled = !!(settings.aiOn && settings.aiKey);
+  let source = "local";
   const a = await FROGBRAIN.smartAnswer(q, call, {
-    aiKey: settings.aiOn && settings.aiKey ? settings.aiKey : "",
+    aiKey: aiEnabled ? settings.aiKey : "",
     ask: (text, c) => api.ai.ask(text, c),
     weather: (city) => api.ai.weather(city),
+    onSource: (s) => {
+      source = s;
+    },
+    onAiError: (msg) => console.log("AI_ERROR", msg),
+    onWeatherError: (msg) => console.log("WEATHER_ERROR", msg),
   });
-  flash("talk", Math.min(2800 + a.length * 110, 10000), a, "🐸");
+  const text = source === "local" && aiEnabled ? `${a}（本地）` : a;
+  flash("talk", Math.min(2800 + text.length * 110, 10000), text, "🐸");
   api.intimacy.bump();
   chatInput.focus();
 }
@@ -432,7 +440,7 @@ async function init() {
   frog.addEventListener("load", applyShape);
   nextIdlePose();
   setTimeout(applyShape, 160);
-  say("{call}，我是审美吉蛙 v3.3。戳我换姿势，问问题也可以。", 0, "🐸");
+  say("{call}，我是审美吉蛙 v3.5。戳我换姿势，问问题也可以。", 0, "🐸");
   api.on("store:update", (s) => {
     settings = s.settings;
     intimacy = s.intimacy || intimacy;
