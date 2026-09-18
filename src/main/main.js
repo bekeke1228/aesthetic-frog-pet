@@ -284,7 +284,7 @@ function autostartRegistryEntry() {
     const out = execFileSync(
       "reg",
       ["query", AUTOSTART_KEY, "/v", AUTOSTART_NAME],
-      { windowsHide: true }
+      { windowsHide: true, stdio: ["ignore", "pipe", "ignore"] }
     ).toString();
     const m = out.match(/REG_SZ\s+(.+)\s*$/m);
     return m ? m[1].trim() : "";
