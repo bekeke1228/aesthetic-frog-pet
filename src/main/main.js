@@ -9,6 +9,7 @@ const {
 } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const { execFileSync } = require("child_process");
 const { pathToFileURL } = require("url");
 
 const { Store } = require("./store");
@@ -201,6 +202,97 @@ function setClickThrough(ignore) {
   }
 }
 
+// ---- 开机自启（自写注册表，保证命令行带上正确的应用路径）----
+const AUTOSTART_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+const AUTOSTART_NAME = "AestheticFrogPet";
+
+function autostartCommand() {
+  // 打包版：直接运行自身 exe；开发版：需要把项目目录作为参数传给 electron
+  return app.isPackaged
+    ? `"${process.execPath}"`
+    : `"${process.execPath}" "${ROOT}"`;
+}
+
+function applyAutostart(enabled) {
+  if (process.platform !== "win32") {
+    try {
+      app.setLoginItemSettings({ openAtLogin: !!enabled });
+    } catch (_) {
+      /* 忽略 */
+    }
+    return;
+  }
+  try {
+    if (enabled) {
+      execFileSync(
+        "reg",
+        [
+          "add",
+          AUTOSTART_KEY,
+          "/v",
+          AUTOSTART_NAME,
+          "/t",
+          "REG_SZ",
+          "/d",
+          autostartCommand(),
+          "/f",
+        ],
+        { windowsHide: true }
+      );
+      // 清理早期错误写法留下的条目（会导致开机只弹出空白 Electron 页面）
+      for (const legacy of ["aesthetic-frog-pet", "electron"]) {
+        try {
+          execFileSync(
+            "reg",
+            ["delete", AUTOSTART_KEY, "/v", legacy, "/f"],
+            { windowsHide: true, stdio: "ignore" }
+          );
+        } catch (_) {
+          /* 没有该条目 */
+        }
+      }
+    } else {
+      try {
+        execFileSync(
+          "reg",
+          ["delete", AUTOSTART_KEY, "/v", AUTOSTART_NAME, "/f"],
+          { windowsHide: true, stdio: "ignore" }
+        );
+      } catch (_) {
+        /* 没有该条目 */
+      }
+      for (const legacy of ["aesthetic-frog-pet", "electron"]) {
+        try {
+          execFileSync(
+            "reg",
+            ["delete", AUTOSTART_KEY, "/v", legacy, "/f"],
+            { windowsHide: true, stdio: "ignore" }
+          );
+        } catch (_) {
+          /* 没有该条目 */
+        }
+      }
+    }
+  } catch (err) {
+    console.error("设置开机自启失败:", err.message);
+  }
+}
+
+function autostartRegistryEntry() {
+  if (process.platform !== "win32") return "";
+  try {
+    const out = execFileSync(
+      "reg",
+      ["query", AUTOSTART_KEY, "/v", AUTOSTART_NAME],
+      { windowsHide: true }
+    ).toString();
+    const m = out.match(/REG_SZ\s+(.+)\s*$/m);
+    return m ? m[1].trim() : "";
+  } catch (_) {
+    return "";
+  }
+}
+
 const WMO = {
   0: "晴",
   1: "基本晴",
@@ -381,7 +473,7 @@ function popupContextMenu() {
 
 function createTray() {
   tray = new Tray(path.join(ASSETS, "tray.png"));
-  tray.setToolTip("审美吉蛙桌宠 v3.5");
+  tray.setToolTip("审美吉蛙桌宠 v3.6");
   refreshTrayMenu();
 }
 
@@ -392,7 +484,7 @@ function registerIpc() {
     const data = store.get();
     if (patch.settings) {
       if ("autostart" in patch.settings) {
-        app.setLoginItemSettings({ openAtLogin: !!patch.settings.autostart });
+        applyAutostart(!!patch.settings.autostart);
       }
       if (
         !data.pomodoro.running &&
@@ -506,7 +598,8 @@ function registerIpc() {
 
 app.whenReady().then(() => {
   store = new Store();
-  app.setLoginItemSettings({ openAtLogin: !!store.get().settings.autostart });
+  // 启动时重写一次自启项：既保证路径正确，也会清掉早期错误条目
+  applyAutostart(!!store.get().settings.autostart);
 
   pomodoro = new Pomodoro(store, {
     onUpdate: () => broadcast("pomodoro:update", pomodoro.getState()),
@@ -656,6 +749,14 @@ app.whenReady().then(() => {
           "WEATHER_TEST",
           JSON.stringify(await panelWin.webContents.executeJavaScript("api.ai.weather('')"))
         );
+        await panelWin.webContents.executeJavaScript(
+          "api.setStore({ settings: { autostart: true } })"
+        );
+        console.log("AUTOSTART_ON", autostartRegistryEntry());
+        await panelWin.webContents.executeJavaScript(
+          "api.setStore({ settings: { autostart: false } })"
+        );
+        console.log("AUTOSTART_OFF", autostartRegistryEntry());
         console.log(
           "CLICK_TEST",
           await petWin.webContents.executeJavaScript(

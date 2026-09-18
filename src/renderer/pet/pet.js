@@ -440,7 +440,7 @@ async function init() {
   frog.addEventListener("load", applyShape);
   nextIdlePose();
   setTimeout(applyShape, 160);
-  say("{call}，我是审美吉蛙 v3.5。戳我换姿势，问问题也可以。", 0, "🐸");
+  say("{call}，我是审美吉蛙 v3.6。戳我换姿势，问问题也可以。", 0, "🐸");
   api.on("store:update", (s) => {
     settings = s.settings;
     intimacy = s.intimacy || intimacy;
